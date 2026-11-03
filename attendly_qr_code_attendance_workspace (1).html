@@ -1,0 +1,1310 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Attendly PRO - Smart Attendance System</title>
+    
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- Tailwind CSS Framework -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        darkbg: '#020617',
+                        cardbg: '#0f172a',
+                        cardborder: '#1e293b',
+                        hoverbg: '#1e293b',
+                        brand: {
+                            50: '#eef2ff',
+                            100: '#e0e7ff',
+                            200: '#c7d2fe',
+                            300: '#a5b4fc',
+                            400: '#818cf8',
+                            500: '#6366f1',
+                            600: '#4f46e5',
+                            700: '#4338ca',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <!-- QR Code Scanning & Generation Libraries -->
+    <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+        body {
+            font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: radial-gradient(circle at 50% 0%, #1e1b4b 0%, #0f172a 40%, #020617 100%);
+            color: #f8fafc;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        .glass-panel {
+            background: rgba(15, 23, 42, 0.75);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.5), 0 0 20px rgba(99, 102, 241, 0.05);
+        }
+
+        .glass-card {
+            background: rgba(30, 41, 59, 0.6);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .glass-card:hover {
+            border-color: rgba(99, 102, 241, 0.4);
+            transform: translateY(-2px);
+            box-shadow: 0 20px 30px -10px rgba(0, 0, 0, 0.4), 0 0 20px rgba(99, 102, 241, 0.15);
+        }
+
+        @keyframes laser-glow {
+            0% { top: 5%; opacity: 0.3; }
+            50% { top: 90%; opacity: 1; }
+            100% { top: 5%; opacity: 0.3; }
+        }
+
+        .scanner-laser {
+            position: absolute;
+            height: 3px;
+            width: 100%;
+            background: linear-gradient(90deg, transparent 0%, #6366f1 20%, #a855f7 50%, #6366f1 80%, transparent 100%);
+            box-shadow: 0 0 20px #818cf8, 0 0 10px #a855f7;
+            animation: laser-glow 2.2s ease-in-out infinite;
+        }
+
+        ::-webkit-scrollbar {
+            width: 4px;
+            height: 4px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #020617;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #334155;
+            border-radius: 9999px;
+        }
+
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between selection:bg-indigo-500 selection:text-white">
+
+    <!-- Top Glow Accent -->
+    <div class="fixed top-0 left-1/2 -translate-x-1/2 w-full max-w-7xl h-32 bg-gradient-to-b from-indigo-500/10 via-purple-500/5 to-transparent blur-3xl pointer-events-none z-0"></div>
+
+    <!-- Top Navigation Header -->
+    <div class="relative z-10">
+        <header class="border-b border-slate-800/80 bg-slate-950/90 backdrop-blur-xl sticky top-0 z-40">
+            <div class="max-w-7xl mx-auto px-2.5 sm:px-6 lg:px-8 flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 sm:gap-2.5 py-1.5 sm:py-3">
+                
+                <!-- Logo & Brand Header -->
+                <div class="flex items-center justify-between w-full sm:w-auto">
+                    <div class="flex items-center space-x-2">
+                        <div class="w-7 h-7 sm:w-10 sm:h-10 rounded-lg sm:rounded-2xl bg-gradient-to-tr from-indigo-600 via-indigo-500 to-purple-500 flex items-center justify-center text-white shadow-md shadow-indigo-500/20 border border-indigo-400/30 shrink-0">
+                            <i class="fa-solid fa-qrcode text-xs sm:text-xl font-black"></i>
+                        </div>
+                        <div>
+                            <div class="flex items-center space-x-1">
+                                <span class="text-base sm:text-xl font-black tracking-tight bg-gradient-to-r from-white via-indigo-100 to-slate-300 bg-clip-text text-transparent">Attendly</span>
+                                <span class="px-1 py-0.2 text-[8px] sm:text-[9px] font-extrabold uppercase tracking-wider bg-indigo-500/10 border border-indigo-500/30 text-indigo-400 rounded-full">PRO</span>
+                            </div>
+                            <span class="block text-[9px] sm:text-[10px] text-slate-400 font-medium tracking-wide -mt-0.5">Smart Attendance</span>
+                        </div>
+                    </div>
+
+                    <!-- Right Compact Controls for Mobile Header -->
+                    <div class="flex items-center space-x-1 sm:hidden">
+                        <button onclick="openShareModal()" class="flex items-center space-x-1 px-2 py-1 bg-indigo-500/10 border border-indigo-500/30 text-indigo-300 rounded-md text-[10px] font-semibold active:scale-95 transition">
+                            <i class="fa-solid fa-share-nodes text-[8px]"></i>
+                            <span>Send Data</span>
+                        </button>
+                        <button onclick="requestNotificationPermission()" class="w-7 h-7 rounded-md bg-slate-900 text-slate-300 border border-slate-800 flex items-center justify-center active:scale-95 text-[10px]">
+                            <i class="fa-solid fa-bell"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Touch-friendly Compact Navigation Tabs -->
+                <nav class="flex space-x-1 bg-slate-900/90 p-0.5 sm:p-1 rounded-lg sm:rounded-2xl border border-slate-800/80 overflow-x-auto no-scrollbar w-full sm:w-auto shadow-inner">
+                    <button onclick="switchTab('overview')" id="tab-overview" class="tab-btn flex-1 sm:flex-none px-2.5 sm:px-4 py-1.5 sm:py-2 text-[11px] sm:text-xs font-semibold rounded-md sm:rounded-xl transition-all flex items-center justify-center space-x-1 whitespace-nowrap bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-md shadow-indigo-500/20 min-h-[32px] sm:min-h-[36px]">
+                        <i class="fa-solid fa-chart-pie text-[10px] sm:text-[11px]"></i>
+                        <span>Overview</span>
+                    </button>
+                    <button onclick="switchTab('scanner')" id="tab-scanner" class="tab-btn flex-1 sm:flex-none px-2.5 sm:px-4 py-1.5 sm:py-2 text-[11px] sm:text-xs font-semibold text-slate-400 hover:text-white rounded-md sm:rounded-xl transition-all flex items-center justify-center space-x-1 whitespace-nowrap min-h-[32px] sm:min-h-[36px]">
+                        <i class="fa-solid fa-qrcode text-[10px] sm:text-[11px]"></i>
+                        <span>Scanner</span>
+                    </button>
+                    <button onclick="switchTab('students')" id="tab-students" class="tab-btn flex-1 sm:flex-none px-2.5 sm:px-4 py-1.5 sm:py-2 text-[11px] sm:text-xs font-semibold text-slate-400 hover:text-white rounded-md sm:rounded-xl transition-all flex items-center justify-center space-x-1 whitespace-nowrap min-h-[32px] sm:min-h-[36px]">
+                        <i class="fa-solid fa-users text-[10px] sm:text-[11px]"></i>
+                        <span>Students</span>
+                    </button>
+                    <button onclick="switchTab('history')" id="tab-history" class="tab-btn flex-1 sm:flex-none px-2.5 sm:px-4 py-1.5 sm:py-2 text-[11px] sm:text-xs font-semibold text-slate-400 hover:text-white rounded-md sm:rounded-xl transition-all flex items-center justify-center space-x-1 whitespace-nowrap min-h-[32px] sm:min-h-[36px]">
+                        <i class="fa-solid fa-clock-rotate-left text-[10px] sm:text-[11px]"></i>
+                        <span>Logs</span>
+                    </button>
+                </nav>
+
+                <!-- Desktop Quick Actions -->
+                <div class="hidden sm:flex items-center space-x-2 shrink-0">
+                    <button onclick="openShareModal()" class="flex items-center space-x-1.5 px-3 py-1.5 bg-indigo-500/10 border border-indigo-500/30 text-indigo-300 hover:bg-indigo-500/20 rounded-xl text-xs font-semibold transition shadow-sm" title="Send or export student roster and attendance logs">
+                        <i class="fa-solid fa-paper-plane text-[10px] text-indigo-400"></i>
+                        <span>Send / Share Data</span>
+                    </button>
+                    <button onclick="requestNotificationPermission()" id="notification-btn" title="Enable Notifications" class="w-8 h-8 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white border border-slate-800 flex items-center justify-center transition-all relative">
+                        <i class="fa-solid fa-bell text-xs"></i>
+                        <span id="notif-dot" class="absolute -top-1 -right-1 w-2 h-2 bg-amber-500 rounded-full hidden"></span>
+                    </button>
+                    <button onclick="toggleDataInfoModal()" title="Data Import & Backup" class="w-8 h-8 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white border border-slate-800 flex items-center justify-center transition-all">
+                        <i class="fa-solid fa-file-arrow-up text-xs"></i>
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Workspace Container -->
+        <main class="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-6 relative z-10">
+
+            <!-- Dynamic Toast Container -->
+            <div id="toast-container" class="fixed top-20 right-4 z-50 flex flex-col space-y-2 pointer-events-none max-w-xs sm:max-w-sm"></div>
+
+            <!-- TAB 1: OVERVIEW -->
+            <section id="view-overview" class="space-y-6">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800/80 pb-4">
+                    <div>
+                        <span class="text-[10px] sm:text-xs font-extrabold tracking-widest text-indigo-400 uppercase">Dashboard & Analytics</span>
+                        <h1 class="text-xl sm:text-2xl font-black text-white mt-0.5 tracking-tight">Classroom Attendance Workspace</h1>
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        <button onclick="openShareModal()" class="px-3.5 py-2.5 bg-slate-900 hover:bg-slate-800 border border-slate-800 text-indigo-300 hover:text-indigo-200 font-bold text-xs rounded-xl transition flex items-center space-x-2">
+                            <i class="fa-solid fa-share-nodes"></i>
+                            <span>Send Data to Someone</span>
+                        </button>
+                        <button onclick="switchTab('scanner')" class="px-4 py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-bold text-xs rounded-xl shadow-lg shadow-indigo-500/25 transition-all flex items-center space-x-2">
+                            <i class="fa-solid fa-qrcode"></i>
+                            <span>Camera Scanner</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Stat Cards Grid -->
+                <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+                    <div class="glass-card rounded-xl sm:rounded-2xl p-4 relative overflow-hidden">
+                        <div class="flex items-center justify-between">
+                            <span class="text-[10px] sm:text-xs font-bold text-slate-400 uppercase tracking-wider">Total Students</span>
+                            <div class="w-8 h-8 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400 text-xs">
+                                <i class="fa-solid fa-user-graduate"></i>
+                            </div>
+                        </div>
+                        <div class="mt-3">
+                            <span id="stat-total-students" class="text-2xl sm:text-3xl font-black text-white">0</span>
+                            <p class="text-[10px] sm:text-xs text-slate-400 mt-0.5 font-medium">Enrolled in roster</p>
+                        </div>
+                    </div>
+
+                    <div class="glass-card rounded-xl sm:rounded-2xl p-4 relative overflow-hidden">
+                        <div class="flex items-center justify-between">
+                            <span class="text-[10px] sm:text-xs font-bold text-slate-400 uppercase tracking-wider">Present Today</span>
+                            <div class="w-8 h-8 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 text-xs">
+                                <i class="fa-solid fa-circle-check"></i>
+                            </div>
+                        </div>
+                        <div class="mt-3">
+                            <span id="stat-present-today" class="text-2xl sm:text-3xl font-black text-emerald-400">0</span>
+                            <p class="text-[10px] sm:text-xs text-slate-400 mt-0.5 font-medium">Scanned check-ins</p>
+                        </div>
+                    </div>
+
+                    <div class="glass-card rounded-xl sm:rounded-2xl p-4 relative overflow-hidden">
+                        <div class="flex items-center justify-between">
+                            <span class="text-[10px] sm:text-xs font-bold text-slate-400 uppercase tracking-wider">Absent Today</span>
+                            <div class="w-8 h-8 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400 text-xs">
+                                <i class="fa-regular fa-clock"></i>
+                            </div>
+                        </div>
+                        <div class="mt-3">
+                            <span id="stat-absent-today" class="text-2xl sm:text-3xl font-black text-amber-400">0</span>
+                            <p class="text-[10px] sm:text-xs text-slate-400 mt-0.5 font-medium">Pending attendance</p>
+                        </div>
+                    </div>
+
+                    <div class="glass-card rounded-xl sm:rounded-2xl p-4 relative overflow-hidden">
+                        <div class="flex items-center justify-between">
+                            <span class="text-[10px] sm:text-xs font-bold text-slate-400 uppercase tracking-wider">Attendance Rate</span>
+                            <div class="w-8 h-8 rounded-xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center text-purple-400 text-xs">
+                                <i class="fa-solid fa-chart-line"></i>
+                            </div>
+                        </div>
+                        <div class="mt-3">
+                            <span id="stat-rate" class="text-2xl sm:text-3xl font-black text-purple-300">0%</span>
+                            <p class="text-[10px] sm:text-xs text-slate-400 mt-0.5 font-medium">Class participation</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Recent Activity Overview Card -->
+                <div class="glass-panel rounded-2xl p-4 sm:p-6 border border-slate-800">
+                    <div class="flex items-center justify-between mb-4 border-b border-slate-800/80 pb-3">
+                        <div>
+                            <h3 class="text-sm sm:text-base font-bold text-white">Attendance Activity Feed</h3>
+                            <p class="text-[11px] text-slate-400">Recent student check-in records</p>
+                        </div>
+                        <button onclick="switchTab('history')" class="text-xs font-bold text-indigo-400 hover:text-indigo-300 transition">View full log &rarr;</button>
+                    </div>
+                    <div id="overview-recent-activity" class="space-y-2">
+                        <!-- Populated by JS -->
+                    </div>
+                </div>
+            </section>
+
+            <!-- TAB 2: QR SCANNER -->
+            <section id="view-scanner" class="hidden space-y-4">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                    <div>
+                        <h1 class="text-lg sm:text-2xl font-bold text-white">Camera QR Scanner</h1>
+                        <p class="text-xs text-gray-400">Position the QR code badge inside the frame</p>
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        <button onclick="switchCameraFacingMode()" id="flip-camera-btn" class="flex-1 sm:flex-none px-3 py-2 bg-slate-900 hover:bg-slate-800 border border-slate-800 text-gray-300 hover:text-white text-xs font-semibold rounded-xl transition flex items-center justify-center space-x-1.5 min-h-[38px]">
+                            <i class="fa-solid fa-camera-rotate"></i>
+                            <span>Flip Camera</span>
+                        </button>
+                        <button id="toggle-camera-btn" onclick="toggleCamera()" class="flex-1 sm:flex-none px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold rounded-xl transition flex items-center justify-center space-x-2 min-h-[38px]">
+                            <i class="fa-solid fa-video"></i>
+                            <span id="camera-btn-text">Stop Camera</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                    <div class="lg:col-span-2 bg-slate-900/80 rounded-2xl border border-slate-800 p-3 sm:p-5 flex flex-col items-center justify-center">
+                        <div class="w-full max-w-sm sm:max-w-md relative rounded-2xl overflow-hidden bg-black/60 border border-slate-800 min-h-[220px] sm:min-h-[280px] flex items-center justify-center">
+                            <div id="reader" class="w-full"></div>
+                            <div id="scanner-laser-overlay" class="absolute inset-0 pointer-events-none hidden">
+                                <div class="scanner-laser"></div>
+                            </div>
+                        </div>
+
+                        <div class="w-full max-w-sm sm:max-w-md mt-4 pt-3 border-t border-slate-800">
+                            <label class="block text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-1.5">Manual Student ID Check-in</label>
+                            <form onsubmit="handleManualSubmit(event)" class="flex space-x-2">
+                                <input type="text" id="manual-student-id" placeholder="Enter ID (e.g. STU-101)" class="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-indigo-500">
+                                <button type="submit" class="px-3.5 py-2 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs rounded-xl transition shrink-0">
+                                    Check In
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+
+                    <div class="space-y-3">
+                        <div id="last-scanned-card" class="bg-slate-900/80 rounded-2xl border border-slate-800 p-4 text-center flex flex-col items-center justify-center min-h-[160px]">
+                            <div class="w-10 h-10 rounded-full bg-slate-800 flex items-center justify-center text-gray-500 mb-2" id="scan-status-icon">
+                                <i class="fa-solid fa-qrcode text-base"></i>
+                            </div>
+                            <h4 class="text-xs font-semibold text-gray-400" id="scan-status-title">Ready for Scan</h4>
+                            <p class="text-[11px] text-gray-500 mt-0.5" id="scan-status-desc">Scanned student details will appear here.</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- TAB 3: STUDENTS MANAGEMENT -->
+            <section id="view-students" class="hidden space-y-4">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div>
+                        <h1 class="text-xl font-bold text-white">Student Directory</h1>
+                        <p class="text-xs text-gray-400">Manage student profiles and generate QR badges</p>
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        <button onclick="openShareModal()" class="px-3 py-2 bg-slate-900 hover:bg-slate-800 border border-slate-800 text-indigo-300 text-xs font-medium rounded-xl transition flex items-center space-x-1.5">
+                            <i class="fa-solid fa-share-nodes"></i>
+                            <span>Send Roster</span>
+                        </button>
+                        <button onclick="openAddStudentModal()" class="px-4 py-2 bg-brand-500 hover:bg-brand-600 text-white text-xs font-medium rounded-xl shadow-lg shadow-brand-500/20 transition flex items-center space-x-2">
+                            <i class="fa-solid fa-plus"></i>
+                            <span>Add Student</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="flex flex-col sm:flex-row gap-2">
+                    <div class="relative flex-1">
+                        <i class="fa-solid fa-magnifying-glass absolute left-3 top-2.5 text-xs text-gray-500"></i>
+                        <input type="text" id="student-search" oninput="renderStudentsTable()" placeholder="Search student by name or ID..." class="w-full bg-cardbg border border-cardborder rounded-xl pl-8 pr-3 py-2 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-brand-500">
+                    </div>
+                    <select id="student-filter-status" onchange="renderStudentsTable()" class="bg-cardbg border border-cardborder rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-brand-500">
+                        <option value="all">All Statuses</option>
+                        <option value="present">Present Today</option>
+                        <option value="absent">Absent Today</option>
+                    </select>
+                </div>
+
+                <div class="bg-cardbg rounded-2xl border border-cardborder overflow-hidden">
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-xs text-gray-300">
+                            <thead class="bg-[#101623] text-gray-400 font-semibold border-b border-cardborder uppercase text-[10px] tracking-wider">
+                                <tr>
+                                    <th class="py-3 px-4">Student Name</th>
+                                    <th class="py-3 px-4">Student ID</th>
+                                    <th class="py-3 px-4">Grade / Class</th>
+                                    <th class="py-3 px-4">Today's Status</th>
+                                    <th class="py-3 px-4 text-right">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="students-table-body" class="divide-y divide-cardborder/60">
+                                <!-- Populated dynamically -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- TAB 4: ATTENDANCE HISTORY / LOGS -->
+            <section id="view-history" class="hidden space-y-4">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div>
+                        <h1 class="text-xl font-bold text-white">Attendance Logs</h1>
+                        <p class="text-xs text-gray-400">Detailed record of all scanned check-ins</p>
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        <button onclick="exportLogsCSV()" class="px-3 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-medium rounded-xl transition flex items-center space-x-1.5">
+                            <i class="fa-solid fa-file-csv"></i>
+                            <span>Export CSV</span>
+                        </button>
+                        <button onclick="openShareModal()" class="px-3 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-medium rounded-xl transition flex items-center space-x-1.5">
+                            <i class="fa-solid fa-paper-plane"></i>
+                            <span>Send Logs</span>
+                        </button>
+                        <button onclick="clearAllLogs()" class="px-3 py-2 bg-red-500/10 hover:bg-red-500/20 text-red-400 text-xs font-medium rounded-xl border border-red-500/20 transition">
+                            Clear
+                        </button>
+                    </div>
+                </div>
+
+                <div class="bg-cardbg rounded-2xl border border-cardborder overflow-hidden">
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-xs text-gray-300">
+                            <thead class="bg-[#101623] text-gray-400 font-semibold border-b border-cardborder uppercase text-[10px] tracking-wider">
+                                <tr>
+                                    <th class="py-3 px-4">Timestamp</th>
+                                    <th class="py-3 px-4">Student Name</th>
+                                    <th class="py-3 px-4">Student ID</th>
+                                    <th class="py-3 px-4">Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="logs-table-body" class="divide-y divide-cardborder/60">
+                                <!-- Populated dynamically -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- COOKIES & STORAGE PERMISSION BANNER -->
+    <div id="cookie-banner" class="fixed bottom-4 left-4 right-4 sm:left-auto sm:right-6 sm:max-w-md z-50 glass-panel rounded-2xl p-4 border border-indigo-500/30 shadow-2xl flex flex-col space-y-3 hidden">
+        <div class="flex items-start space-x-3">
+            <div class="w-8 h-8 rounded-xl bg-indigo-500/20 text-indigo-400 flex items-center justify-center shrink-0 mt-0.5 border border-indigo-500/30">
+                <i class="fa-solid fa-cookie-bite text-sm"></i>
+            </div>
+            <div class="flex-1">
+                <h4 class="text-xs font-bold text-white">Cookie & Local Storage Permission</h4>
+                <p class="text-[11px] text-gray-300 mt-0.5 leading-relaxed">
+                    Attendly uses browser cookies and local storage to save your student roster and attendance history locally on your device. No personal data is tracked or sold.
+                </p>
+            </div>
+        </div>
+        <div class="flex items-center justify-end space-x-2 pt-1 border-t border-slate-800">
+            <button onclick="declineCookies()" class="px-3 py-1.5 text-xs text-gray-400 hover:text-white font-medium rounded-lg transition">Decline</button>
+            <button onclick="acceptCookies()" class="px-4 py-1.5 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-bold text-xs rounded-xl shadow-md transition">Accept & Continue</button>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="border-t border-cardborder/60 py-4 text-center text-[11px] text-gray-500">
+        <p>Attendly Workspace &bull; Local Storage & Instant Export</p>
+    </footer>
+
+    <!-- MODAL: SEND / SHARE DATA -->
+    <div id="share-modal" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-cardbg border border-cardborder rounded-2xl w-full max-w-md p-5 space-y-4 shadow-2xl">
+            <div class="flex items-center justify-between border-b border-cardborder pb-3">
+                <div class="flex items-center space-x-2">
+                    <div class="w-8 h-8 rounded-lg bg-indigo-500/10 border border-indigo-500/30 flex items-center justify-center text-indigo-400 text-sm">
+                        <i class="fa-solid fa-paper-plane"></i>
+                    </div>
+                    <h3 class="text-base font-bold text-white">Send Data to Someone</h3>
+                </div>
+                <button onclick="closeShareModal()" class="text-gray-400 hover:text-white"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+
+            <p class="text-xs text-gray-300 leading-relaxed">
+                Export and send your current student roster and attendance logs directly to a colleague, teacher, or supervisor via WhatsApp, Email, or standard apps.
+            </p>
+
+            <div class="space-y-2 pt-1">
+                <button onclick="shareViaNative()" class="w-full py-2.5 px-4 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-semibold text-xs rounded-xl shadow-lg shadow-indigo-500/20 transition flex items-center justify-center space-x-2">
+                    <i class="fa-solid fa-share-nodes"></i>
+                    <span>Share via Mobile / System Apps</span>
+                </button>
+
+                <div class="grid grid-cols-2 gap-2 pt-1">
+                    <button onclick="exportJSONData()" class="py-2 px-3 bg-darkbg hover:bg-hoverbg border border-cardborder text-white text-xs font-medium rounded-xl flex items-center justify-center space-x-1.5 transition">
+                        <i class="fa-solid fa-file-code text-indigo-400"></i>
+                        <span>Download JSON</span>
+                    </button>
+                    <button onclick="exportLogsCSV()" class="py-2 px-3 bg-darkbg hover:bg-hoverbg border border-cardborder text-white text-xs font-medium rounded-xl flex items-center justify-center space-x-1.5 transition">
+                        <i class="fa-solid fa-file-csv text-emerald-400"></i>
+                        <span>Download CSV</span>
+                    </button>
+                </div>
+            </div>
+
+            <div class="flex justify-end pt-2 border-t border-cardborder">
+                <button onclick="closeShareModal()" class="px-3 py-1.5 text-xs font-medium text-gray-400 hover:text-white">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: ADD STUDENT -->
+    <div id="add-student-modal" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-cardbg border border-cardborder rounded-2xl w-full max-w-md p-5 space-y-4 shadow-2xl">
+            <div class="flex items-center justify-between">
+                <h3 class="text-base font-bold text-white">Add New Student</h3>
+                <button onclick="closeAddStudentModal()" class="text-gray-400 hover:text-white"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+
+            <form onsubmit="saveNewStudent(event)" class="space-y-3">
+                <div>
+                    <label class="block text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-1">Full Name</label>
+                    <input type="text" id="input-student-name" required placeholder="e.g. Alex Johnson" class="w-full bg-darkbg border border-cardborder rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-brand-500">
+                </div>
+                <div>
+                    <label class="block text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-1">Student ID / Roll No.</label>
+                    <input type="text" id="input-student-id" required placeholder="e.g. STU-105" class="w-full bg-darkbg border border-cardborder rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-brand-500">
+                </div>
+                <div>
+                    <label class="block text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-1">Class / Grade</label>
+                    <input type="text" id="input-student-class" placeholder="e.g. Grade 10 - A" class="w-full bg-darkbg border border-cardborder rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-brand-500">
+                </div>
+
+                <div class="flex justify-end space-x-2 pt-2 border-t border-cardborder">
+                    <button type="button" onclick="closeAddStudentModal()" class="px-3 py-1.5 text-xs font-medium text-gray-400 hover:text-white">Cancel</button>
+                    <button type="submit" class="px-4 py-2 bg-brand-500 hover:bg-brand-600 text-white text-xs font-medium rounded-xl shadow-lg shadow-brand-500/20">Save Student</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL: VIEW & DOWNLOAD QR CODE -->
+    <div id="qr-view-modal" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-cardbg border border-cardborder rounded-2xl w-full max-w-sm p-5 text-center space-y-3 shadow-2xl">
+            <div class="flex justify-between items-center">
+                <h3 class="text-sm font-bold text-white">Student QR Code Badge</h3>
+                <button onclick="closeQrModal()" class="text-gray-400 hover:text-white"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+
+            <div class="bg-white p-3 rounded-xl flex items-center justify-center inline-block mx-auto border border-gray-200" id="qr-container"></div>
+
+            <div>
+                <h4 id="qr-student-name" class="font-bold text-sm text-white">Student Name</h4>
+                <p id="qr-student-id" class="text-xs text-brand-400 font-mono mt-0.5">ID: STU-000</p>
+            </div>
+
+            <button onclick="downloadQrCode()" class="w-full py-2 bg-brand-500 hover:bg-brand-600 text-white font-medium text-xs rounded-xl shadow-md transition flex items-center justify-center space-x-2">
+                <i class="fa-solid fa-download"></i>
+                <span>Download Badge</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- MODAL: DATA IMPORT / EXPORT INFO -->
+    <div id="data-info-modal" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-cardbg border border-cardborder rounded-2xl w-full max-w-lg p-5 space-y-4 shadow-2xl">
+            <div class="flex items-center justify-between border-b border-cardborder pb-2.5">
+                <div class="flex items-center space-x-2">
+                    <i class="fa-solid fa-database text-brand-400 text-base"></i>
+                    <h3 class="text-base font-bold text-white">Import & Export Workspace Data</h3>
+                </div>
+                <button onclick="toggleDataInfoModal()" class="text-gray-400 hover:text-white"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+
+            <div class="space-y-2 text-xs text-gray-300 leading-relaxed">
+                <p>
+                    Import backup file received from another teacher or export your local database for safekeeping.
+                </p>
+            </div>
+
+            <div class="pt-2 border-t border-cardborder space-y-2">
+                <h4 class="text-[10px] font-bold text-gray-400 uppercase tracking-wider">File Controls</h4>
+                <div class="grid grid-cols-2 gap-2">
+                    <button onclick="exportJSONData()" class="px-3 py-2 bg-darkbg hover:bg-hoverbg border border-cardborder text-white text-xs font-medium rounded-xl flex items-center justify-center space-x-1.5">
+                        <i class="fa-solid fa-download text-brand-400"></i>
+                        <span>Export (JSON)</span>
+                    </button>
+                    <label class="px-3 py-2 bg-darkbg hover:bg-hoverbg border border-cardborder text-white text-xs font-medium rounded-xl flex items-center justify-center space-x-1.5 cursor-pointer">
+                        <i class="fa-solid fa-upload text-emerald-400"></i>
+                        <span>Import Data File</span>
+                        <input type="file" id="import-file-input" accept=".json" onchange="importJSONData(event)" class="hidden">
+                    </label>
+                </div>
+            </div>
+
+            <div class="flex justify-end pt-1">
+                <button onclick="toggleDataInfoModal()" class="px-3 py-1.5 bg-brand-500 text-white text-xs font-medium rounded-xl">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: CONFIRM DELETE STUDENT -->
+    <div id="delete-student-modal" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-cardbg border border-cardborder rounded-2xl w-full max-w-sm p-5 space-y-3 shadow-2xl text-center">
+            <div class="w-10 h-10 rounded-full bg-red-500/20 text-red-400 flex items-center justify-center mx-auto text-lg border border-red-500/30">
+                <i class="fa-solid fa-triangle-exclamation"></i>
+            </div>
+            <div>
+                <h3 class="text-sm font-bold text-white">Delete Student?</h3>
+                <p id="delete-student-confirm-text" class="text-xs text-gray-400 mt-1">Are you sure you want to remove this student?</p>
+            </div>
+
+            <div class="flex justify-center space-x-2 pt-2">
+                <button onclick="closeDeleteStudentModal()" class="px-3 py-1.5 rounded-xl border border-cardborder bg-darkbg text-gray-300 text-xs font-medium hover:text-white">Cancel</button>
+                <button onclick="confirmDeleteStudentAction()" class="px-4 py-1.5 bg-red-600 hover:bg-red-500 text-white text-xs font-medium rounded-xl shadow-lg shadow-red-600/20">Delete Student</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- JAVASCRIPT LOGIC -->
+    <script>
+        // Cookie Storage Helper Functions
+        window.setCookie = function(name, value, days = 365) {
+            try {
+                const expires = new Date(Date.now() + days * 864e5).toUTCString();
+                const encodedVal = encodeURIComponent(JSON.stringify(value));
+                document.cookie = `${name}=${encodedVal}; expires=${expires}; path=/; SameSite=Lax`;
+            } catch (e) {}
+        };
+
+        window.getCookie = function(name) {
+            try {
+                const nameEQ = name + "=";
+                const ca = document.cookie.split(';');
+                for (let i = 0; i < ca.length; i++) {
+                    let c = ca[i].trim();
+                    if (c.indexOf(nameEQ) === 0) {
+                        return JSON.parse(decodeURIComponent(c.substring(nameEQ.length)));
+                    }
+                }
+            } catch (e) {}
+            return null;
+        };
+
+        window.getLocalData = function(key, defaultVal) {
+            try {
+                const stored = localStorage.getItem('attendly_' + key);
+                if (stored) return JSON.parse(stored);
+            } catch (e) {}
+
+            try {
+                const cookieData = window.getCookie('attendly_' + key);
+                if (cookieData) return cookieData;
+            } catch (e) {}
+
+            return defaultVal;
+        };
+
+        window.setLocalData = function(key, val) {
+            try { localStorage.setItem('attendly_' + key, JSON.stringify(val)); } catch (e) {}
+            try { window.setCookie('attendly_' + key, val, 365); } catch (e) {}
+        };
+
+        // Check & Render Cookie Consent Banner
+        function checkCookieConsent() {
+            const consent = window.getLocalData('cookie_consent', null);
+            const banner = document.getElementById('cookie-banner');
+            if (consent === null && banner) {
+                banner.classList.remove('hidden');
+            }
+        }
+
+        function acceptCookies() {
+            window.setLocalData('cookie_consent', 'accepted');
+            const banner = document.getElementById('cookie-banner');
+            if (banner) banner.classList.add('hidden');
+            showToast("Cookie preferences saved!", 'success');
+        }
+        window.acceptCookies = acceptCookies;
+
+        function declineCookies() {
+            window.setLocalData('cookie_consent', 'declined');
+            const banner = document.getElementById('cookie-banner');
+            if (banner) banner.classList.add('hidden');
+            showToast("Local cookies disabled", 'info');
+        }
+        window.declineCookies = declineCookies;
+
+        // Initialize Local Roster Data
+        window.students = window.getLocalData('students_roster', [
+            { id: 'STU-101', name: 'Alex Johnson', grade: 'Grade 10 - A' },
+            { id: 'STU-102', name: 'Sarah Williams', grade: 'Grade 10 - A' },
+            { id: 'STU-103', name: 'Michael Brown', grade: 'Grade 10 - B' }
+        ]);
+        window.logs = window.getLocalData('logs_history', []);
+
+        let html5QrcodeScanner = null;
+        let isScannerActive = false;
+        let currentFacingMode = "environment"; 
+
+        function switchCameraFacingMode() {
+            currentFacingMode = (currentFacingMode === "environment") ? "user" : "environment";
+            if (isScannerActive) {
+                stopCameraScanner();
+                setTimeout(() => startCameraScanner(), 300);
+            }
+            showToast(`Switched to ${currentFacingMode === "user" ? "Front" : "Rear"} Camera`, 'info');
+        }
+        window.switchCameraFacingMode = switchCameraFacingMode;
+
+        function startCameraScanner() {
+            if (isScannerActive) return;
+
+            const overlay = document.getElementById('scanner-laser-overlay');
+            if (overlay) overlay.classList.remove('hidden');
+
+            html5QrcodeScanner = new Html5Qrcode("reader");
+            const qrWidth = window.innerWidth < 640 ? 180 : 220;
+            const config = { fps: 12, qrbox: { width: qrWidth, height: qrWidth } };
+
+            html5QrcodeScanner.start(
+                { facingMode: currentFacingMode },
+                config,
+                (decodedText) => {
+                    processCheckIn(decodedText);
+                },
+                () => {}
+            ).then(() => {
+                isScannerActive = true;
+                const btnText = document.getElementById('camera-btn-text');
+                if (btnText) btnText.textContent = 'Stop Camera';
+            }).catch(err => {
+                console.warn("Camera start error:", err);
+                const reader = document.getElementById('reader');
+                if (reader) {
+                    reader.innerHTML = `
+                        <div class="p-4 text-center text-xs text-gray-400">
+                            <i class="fa-solid fa-video-slash text-lg mb-1 text-gray-600 block"></i>
+                            Camera access not permitted or unavailable.<br>Use the manual ID form below to check in.
+                        </div>
+                    `;
+                }
+                if (overlay) overlay.classList.add('hidden');
+                isScannerActive = false;
+            });
+        }
+        window.startCameraScanner = startCameraScanner;
+
+        function saveNewStudent(e) {
+            e.preventDefault();
+            const name = document.getElementById('input-student-name').value.trim();
+            const id = document.getElementById('input-student-id').value.trim();
+            const grade = document.getElementById('input-student-class').value.trim();
+
+            if ((window.students || []).some(s => s.id.toLowerCase() === id.toLowerCase())) {
+                showToast(`Student ID "${id}" already exists!`, 'error');
+                return;
+            }
+
+            const newStudent = { id, name, grade };
+            window.students.push(newStudent);
+            window.setLocalData('students_roster', window.students);
+            
+            closeAddStudentModal();
+            renderAllViews();
+            showToast(`Added ${name}!`, 'success');
+            document.getElementById('input-student-name').value = '';
+            document.getElementById('input-student-id').value = '';
+            document.getElementById('input-student-class').value = '';
+        }
+        window.saveNewStudent = saveNewStudent;
+
+        function switchTab(tabName) {
+            ['overview', 'scanner', 'students', 'history'].forEach(tab => {
+                const btn = document.getElementById(`tab-${tab}`);
+                const view = document.getElementById(`view-${tab}`);
+                if (btn && view) {
+                    if (tab === tabName) {
+                        btn.className = "tab-btn flex-1 sm:flex-none px-2.5 sm:px-4 py-1.5 sm:py-2 text-[11px] sm:text-xs font-semibold rounded-md sm:rounded-xl transition-all flex items-center justify-center space-x-1 whitespace-nowrap bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-md shadow-indigo-500/20 min-h-[32px] sm:min-h-[36px]";
+                        view.classList.remove('hidden');
+                    } else {
+                        btn.className = "tab-btn flex-1 sm:flex-none px-2.5 sm:px-4 py-1.5 sm:py-2 text-[11px] sm:text-xs font-semibold text-slate-400 hover:text-white rounded-md sm:rounded-xl transition-all flex items-center justify-center space-x-1 whitespace-nowrap min-h-[32px] sm:min-h-[36px]";
+                        view.classList.add('hidden');
+                    }
+                }
+            });
+
+            if (tabName === 'scanner') {
+                startCameraScanner();
+            } else {
+                stopCameraScanner();
+            }
+            renderAllViews();
+        }
+        window.switchTab = switchTab;
+
+        function stopCameraScanner() {
+            if (html5QrcodeScanner && isScannerActive) {
+                html5QrcodeScanner.stop().then(() => {
+                    isScannerActive = false;
+                    const btnText = document.getElementById('camera-btn-text');
+                    if (btnText) btnText.textContent = 'Start Camera';
+                    const overlay = document.getElementById('scanner-laser-overlay');
+                    if (overlay) overlay.classList.add('hidden');
+                }).catch(err => console.warn("Stop camera error:", err));
+            }
+        }
+        window.stopCameraScanner = stopCameraScanner;
+
+        function toggleCamera() {
+            if (isScannerActive) {
+                stopCameraScanner();
+            } else {
+                startCameraScanner();
+            }
+        }
+        window.toggleCamera = toggleCamera;
+
+        function renderAllViews() {
+            renderOverview();
+            renderStudentsTable();
+            renderLogsTable();
+        }
+        window.renderAllViews = renderAllViews;
+
+        function getTodayDateStr() {
+            return new Date().toISOString().split('T')[0];
+        }
+
+        function renderOverview() {
+            const today = getTodayDateStr();
+            const todayLogs = (window.logs || []).filter(l => l.timestamp && l.timestamp.startsWith(today));
+            const presentIds = new Set(todayLogs.map(l => l.studentId));
+
+            const total = (window.students || []).length;
+            const present = presentIds.size;
+            const absent = Math.max(0, total - present);
+            const rate = total > 0 ? Math.round((present / total) * 100) : 0;
+
+            const totalEl = document.getElementById('stat-total-students');
+            const presentEl = document.getElementById('stat-present-today');
+            const absentEl = document.getElementById('stat-absent-today');
+            const rateEl = document.getElementById('stat-rate');
+
+            if (totalEl) totalEl.textContent = total;
+            if (presentEl) presentEl.textContent = present;
+            if (absentEl) absentEl.textContent = absent;
+            if (rateEl) rateEl.textContent = `${rate}%`;
+
+            const container = document.getElementById('overview-recent-activity');
+            if (container) {
+                const sortedLogs = [...(window.logs || [])].reverse().slice(0, 5);
+                if (sortedLogs.length === 0) {
+                    container.innerHTML = `<div class="text-xs text-gray-500 italic py-2">No check-in activity recorded yet today.</div>`;
+                } else {
+                    container.innerHTML = sortedLogs.map(log => `
+                        <div class="flex items-center justify-between p-2 rounded-xl bg-darkbg border border-cardborder/40 text-xs">
+                            <div class="flex items-center space-x-2.5">
+                                <div class="w-6 h-6 rounded-lg bg-emerald-500/10 text-emerald-400 flex items-center justify-center text-[10px]">
+                                    <i class="fa-solid fa-check"></i>
+                                </div>
+                                <div>
+                                    <span class="font-semibold text-white">${log.studentName}</span>
+                                    <span class="text-gray-500 ml-1 font-mono text-[10px]">(${log.studentId})</span>
+                                </div>
+                            </div>
+                            <span class="text-gray-400 font-mono text-[10px]">${new Date(log.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
+                        </div>
+                    `).join('');
+                }
+            }
+        }
+        window.renderOverview = renderOverview;
+
+        function renderStudentsTable() {
+            const tbody = document.getElementById('students-table-body');
+            if (!tbody) return;
+
+            const query = (document.getElementById('student-search')?.value || '').toLowerCase();
+            const filterStatus = document.getElementById('student-filter-status')?.value || 'all';
+
+            const today = getTodayDateStr();
+            const todayLogs = (window.logs || []).filter(l => l.timestamp && l.timestamp.startsWith(today));
+            const presentIds = new Set(todayLogs.map(l => l.studentId));
+
+            const filtered = (window.students || []).filter(student => {
+                const matchesQuery = student.name.toLowerCase().includes(query) || student.id.toLowerCase().includes(query);
+                const isPresent = presentIds.has(student.id);
+                if (filterStatus === 'present' && !isPresent) return false;
+                if (filterStatus === 'absent' && isPresent) return false;
+                return matchesQuery;
+            });
+
+            if (filtered.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="5" class="py-6 text-center text-gray-500 text-xs">No students found matching current filters.</td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = filtered.map(student => {
+                const isPresent = presentIds.has(student.id);
+                const safeId = student.id.replace(/'/g, "\\'");
+                return `
+                    <tr class="hover:bg-hoverbg/40 transition">
+                        <td class="py-2.5 px-4 font-semibold text-white">${student.name}</td>
+                        <td class="py-2.5 px-4 font-mono text-brand-400">${student.id}</td>
+                        <td class="py-2.5 px-4 text-gray-400">${student.grade || 'N/A'}</td>
+                        <td class="py-2.5 px-4">
+                            ${isPresent 
+                                ? `<span class="px-2 py-0.5 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 rounded-full text-[10px] font-semibold"><i class="fa-solid fa-check mr-1"></i>Present</span>`
+                                : `<span class="px-2 py-0.5 bg-amber-500/10 border border-amber-500/20 text-amber-400 rounded-full text-[10px] font-semibold"><i class="fa-regular fa-clock mr-1"></i>Absent</span>`
+                            }
+                        </td>
+                        <td class="py-2.5 px-4 text-right space-x-1.5">
+                            <button onclick="window.viewStudentQr('${safeId}')" title="Generate QR Code" class="p-1 rounded-lg bg-darkbg border border-cardborder text-gray-300 hover:text-white hover:border-brand-500 transition">
+                                <i class="fa-solid fa-qrcode"></i>
+                            </button>
+                            <button onclick="window.deleteStudent('${safeId}')" title="Delete Student" class="p-1 rounded-lg bg-darkbg border border-cardborder text-red-400 hover:text-red-300 hover:border-red-500/40 transition">
+                                <i class="fa-solid fa-trash"></i>
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+        window.renderStudentsTable = renderStudentsTable;
+
+        function renderLogsTable() {
+            const tbody = document.getElementById('logs-table-body');
+            if (!tbody) return;
+
+            const sortedLogs = [...(window.logs || [])].reverse();
+            if (sortedLogs.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="4" class="py-6 text-center text-gray-500 text-xs">No check-in logs available yet.</td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = sortedLogs.map(log => `
+                <tr class="hover:bg-hoverbg/40 transition">
+                    <td class="py-2.5 px-4 font-mono text-xs text-gray-400">${new Date(log.timestamp).toLocaleString()}</td>
+                    <td class="py-2.5 px-4 font-semibold text-white">${log.studentName}</td>
+                    <td class="py-2.5 px-4 font-mono text-brand-400">${log.studentId}</td>
+                    <td class="py-2.5 px-4">
+                        <span class="px-2 py-0.5 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 rounded-full text-[10px] font-semibold">Success</span>
+                    </td>
+                </tr>
+            `).join('');
+        }
+        window.renderLogsTable = renderLogsTable;
+
+        function processCheckIn(studentIdInput) {
+            const studentId = studentIdInput.trim();
+            const student = (window.students || []).find(s => s.id.toLowerCase() === studentId.toLowerCase());
+
+            const today = getTodayDateStr();
+            const alreadyCheckedIn = (window.logs || []).some(l => l.studentId.toLowerCase() === studentId.toLowerCase() && l.timestamp.startsWith(today));
+
+            const statusCard = document.getElementById('last-scanned-card');
+            const iconEl = document.getElementById('scan-status-icon');
+            const titleEl = document.getElementById('scan-status-title');
+            const descEl = document.getElementById('scan-status-desc');
+
+            if (!student) {
+                playAudioChime(false);
+                if (statusCard) {
+                    statusCard.className = "bg-red-500/10 border border-red-500/30 rounded-2xl p-4 text-center flex flex-col items-center justify-center min-h-[160px]";
+                    iconEl.className = "w-10 h-10 rounded-full bg-red-500/20 flex items-center justify-center text-red-400 mb-2";
+                    iconEl.innerHTML = `<i class="fa-solid fa-triangle-exclamation text-lg"></i>`;
+                    titleEl.textContent = "Unrecognized Student QR";
+                    descEl.textContent = `No profile registered for ID: ${studentId}`;
+                }
+                showToast(`Unrecognized ID: ${studentId}`, 'error');
+                triggerNotification("Scan Warning", `Unrecognized QR scanned (ID: ${studentId})`);
+                return;
+            }
+
+            if (alreadyCheckedIn) {
+                playAudioChime(false);
+                if (statusCard) {
+                    statusCard.className = "bg-amber-500/10 border border-amber-500/30 rounded-2xl p-4 text-center flex flex-col items-center justify-center min-h-[160px]";
+                    iconEl.className = "w-10 h-10 rounded-full bg-amber-500/20 flex items-center justify-center text-amber-400 mb-2";
+                    iconEl.innerHTML = `<i class="fa-solid fa-clock-rotate-left text-lg"></i>`;
+                    titleEl.textContent = "Already Checked In";
+                    descEl.textContent = `${student.name} (${student.id}) has already scanned in today.`;
+                }
+                showToast(`${student.name} is already checked in today`, 'info');
+                return;
+            }
+
+            const newLog = {
+                id: 'log-' + Date.now(),
+                studentId: student.id,
+                studentName: student.name,
+                timestamp: new Date().toISOString()
+            };
+
+            window.logs.push(newLog);
+            window.setLocalData('logs_history', window.logs);
+            playAudioChime(true);
+            renderAllViews();
+
+            if (statusCard) {
+                statusCard.className = "bg-emerald-500/10 border border-emerald-500/30 rounded-2xl p-4 text-center flex flex-col items-center justify-center min-h-[160px]";
+                iconEl.className = "w-10 h-10 rounded-full bg-emerald-500/20 flex items-center justify-center text-emerald-400 mb-2";
+                iconEl.innerHTML = `<i class="fa-solid fa-check text-xl"></i>`;
+                titleEl.textContent = student.name;
+                descEl.textContent = `ID: ${student.id} • ${student.grade || 'Student'}`;
+            }
+
+            showToast(`Check-in successful: ${student.name}`, 'success');
+            triggerNotification("Check-in Successful!", `${student.name} (${student.id}) has checked in.`);
+        }
+        window.processCheckIn = processCheckIn;
+
+        function handleManualSubmit(e) {
+            e.preventDefault();
+            const input = document.getElementById('manual-student-id');
+            if (input && input.value.trim()) {
+                processCheckIn(input.value.trim());
+                input.value = '';
+            }
+        }
+        window.handleManualSubmit = handleManualSubmit;
+
+        function openAddStudentModal() {
+            const modal = document.getElementById('add-student-modal');
+            if (modal) modal.classList.remove('hidden');
+        }
+        window.openAddStudentModal = openAddStudentModal;
+
+        function closeAddStudentModal() {
+            const modal = document.getElementById('add-student-modal');
+            if (modal) modal.classList.add('hidden');
+        }
+        window.closeAddStudentModal = closeAddStudentModal;
+
+        let studentIdToDelete = null;
+
+        function deleteStudent(id) {
+            if (!id) return;
+            const targetId = String(id).trim();
+            const student = (window.students || []).find(s => String(s.id).trim().toLowerCase() === targetId.toLowerCase());
+            if (!student) return;
+            studentIdToDelete = student.id;
+            
+            const textEl = document.getElementById('delete-student-confirm-text');
+            if (textEl) {
+                textEl.textContent = `Are you sure you want to delete ${student.name} (${student.id})?`;
+            }
+            
+            const modal = document.getElementById('delete-student-modal');
+            if (modal) modal.classList.remove('hidden');
+        }
+        window.deleteStudent = deleteStudent;
+
+        function closeDeleteStudentModal() {
+            studentIdToDelete = null;
+            const modal = document.getElementById('delete-student-modal');
+            if (modal) modal.classList.add('hidden');
+        }
+        window.closeDeleteStudentModal = closeDeleteStudentModal;
+
+        function confirmDeleteStudentAction() {
+            if (!studentIdToDelete) return;
+            const targetId = String(studentIdToDelete).trim();
+            
+            window.students = (window.students || []).filter(s => String(s.id).trim().toLowerCase() !== targetId.toLowerCase());
+            window.setLocalData('students_roster', window.students);
+            
+            closeDeleteStudentModal();
+            renderAllViews();
+            showToast(`Student removed`, 'info');
+        }
+        window.confirmDeleteStudentAction = confirmDeleteStudentAction;
+
+        let currentQrStudent = null;
+        function viewStudentQr(id) {
+            const student = (window.students || []).find(s => s.id === id);
+            if (!student) return;
+            currentQrStudent = student;
+
+            const container = document.getElementById('qr-container');
+            if (container) {
+                container.innerHTML = '';
+                new QRCode(container, {
+                    text: student.id,
+                    width: 150,
+                    height: 150,
+                    colorDark : "#0B0F17",
+                    colorLight : "#ffffff",
+                    correctLevel : QRCode.CorrectLevel.H
+                });
+            }
+
+            const nameEl = document.getElementById('qr-student-name');
+            const idEl = document.getElementById('qr-student-id');
+            if (nameEl) nameEl.textContent = student.name;
+            if (idEl) idEl.textContent = `ID: ${student.id}`;
+
+            const modal = document.getElementById('qr-view-modal');
+            if (modal) modal.classList.remove('hidden');
+        }
+        window.viewStudentQr = viewStudentQr;
+
+        function closeQrModal() {
+            const modal = document.getElementById('qr-view-modal');
+            if (modal) modal.classList.add('hidden');
+        }
+        window.closeQrModal = closeQrModal;
+
+        function downloadQrCode() {
+            const canvas = document.querySelector('#qr-container canvas');
+            const img = document.querySelector('#qr-container img');
+            if (!canvas && !img) return;
+
+            let dataUrl = canvas ? canvas.toDataURL("image/png") : img.src;
+            const a = document.createElement('a');
+            a.href = dataUrl;
+            a.download = `QR_${currentQrStudent ? currentQrStudent.id : 'Badge'}.png`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+        }
+        window.downloadQrCode = downloadQrCode;
+
+        function openShareModal() {
+            const modal = document.getElementById('share-modal');
+            if (modal) modal.classList.remove('hidden');
+        }
+        window.openShareModal = openShareModal;
+
+        function closeShareModal() {
+            const modal = document.getElementById('share-modal');
+            if (modal) modal.classList.add('hidden');
+        }
+        window.closeShareModal = closeShareModal;
+
+        function shareViaNative() {
+            const data = { 
+                exportDate: new Date().toISOString(),
+                totalStudents: (window.students || []).length,
+                students: window.students || [], 
+                logs: window.logs || [] 
+            };
+            const jsonStr = JSON.stringify(data, null, 2);
+            
+            // Try Native OS Sharing API
+            if (navigator.share) {
+                try {
+                    const file = new File([jsonStr], `Attendly_Report_${getTodayDateStr()}.json`, { type: 'application/json' });
+                    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+                        navigator.share({
+                            title: 'Attendly Attendance Report',
+                            text: 'Here is the exported student roster and attendance log file.',
+                            files: [file]
+                        }).catch(() => {});
+                        return;
+                    } else {
+                        navigator.share({
+                            title: 'Attendly Attendance Report',
+                            text: `Attendly Report (${getTodayDateStr()}):\nTotal Students: ${data.totalStudents}\nLogs Recorded: ${data.logs.length}\n\nFull JSON:\n${jsonStr.slice(0, 500)}...`
+                        }).catch(() => {});
+                        return;
+                    }
+                } catch(err) {}
+            }
+
+            // Fallback: Copy to clipboard
+            if (navigator.clipboard) {
+                navigator.clipboard.writeText(jsonStr).then(() => {
+                    showToast("Copied attendance data to clipboard!", 'success');
+                }).catch(() => {
+                    exportJSONData();
+                });
+            } else {
+                exportJSONData();
+            }
+        }
+        window.shareViaNative = shareViaNative;
+
+        function toggleDataInfoModal() {
+            const modal = document.getElementById('data-info-modal');
+            if (modal) modal.classList.toggle('hidden');
+        }
+        window.toggleDataInfoModal = toggleDataInfoModal;
+
+        function playAudioChime(isSuccess) {
+            try {
+                const ctx = new (window.AudioContext || window.webkitAudioContext)();
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+
+                if (isSuccess) {
+                    osc.frequency.setValueAtTime(523.25, ctx.currentTime);
+                    osc.frequency.setValueAtTime(659.25, ctx.currentTime + 0.1);
+                    gain.gain.setValueAtTime(0.2, ctx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.35);
+                    osc.start();
+                    osc.stop(ctx.currentTime + 0.35);
+                } else {
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(220, ctx.currentTime);
+                    gain.gain.setValueAtTime(0.2, ctx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.3);
+                    osc.start();
+                    osc.stop(ctx.currentTime + 0.3);
+                }
+            } catch(e){}
+
+            if (navigator.vibrate) {
+                navigator.vibrate(isSuccess ? [100, 50, 100] : [200]);
+            }
+        }
+
+        function requestNotificationPermission() {
+            if (!("Notification" in window)) {
+                showToast("Notifications not supported in browser", 'info');
+                return;
+            }
+            Notification.requestPermission().then(permission => {
+                const dot = document.getElementById('notif-dot');
+                if (permission === "granted") {
+                    if (dot) dot.classList.remove('hidden');
+                    showToast("Device notifications enabled!", 'success');
+                } else {
+                    showToast("Notification permission denied", 'info');
+                }
+            });
+        }
+        window.requestNotificationPermission = requestNotificationPermission;
+
+        function triggerNotification(title, body) {
+            if ("Notification" in window && Notification.permission === "granted") {
+                new Notification(title, { body, icon: 'https://cdn-icons-png.flaticon.com/512/3002/3002268.png' });
+            }
+        }
+
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toast-container');
+            if (!container) return;
+
+            const toast = document.createElement('div');
+            const bgClass = type === 'success' ? 'bg-emerald-600' : type === 'error' ? 'bg-red-600' : 'bg-brand-600';
+            toast.className = `${bgClass} text-white text-xs px-3.5 py-2.5 rounded-xl shadow-xl flex items-center space-x-2 pointer-events-auto transition-all transform duration-300 translate-y-2 opacity-0`;
+            toast.innerHTML = `<i class="fa-solid ${type === 'success' ? 'fa-circle-check' : 'fa-circle-info'}"></i><span>${message}</span>`;
+
+            container.appendChild(toast);
+            setTimeout(() => {
+                toast.classList.remove('translate-y-2', 'opacity-0');
+            }, 10);
+
+            setTimeout(() => {
+                toast.classList.add('opacity-0');
+                setTimeout(() => toast.remove(), 300);
+            }, 3500);
+        }
+        window.showToast = showToast;
+
+        function exportLogsCSV() {
+            if ((window.logs || []).length === 0) {
+                showToast("No logs available to export", 'info');
+                return;
+            }
+            let csv = "Timestamp,Student Name,Student ID\n";
+            window.logs.forEach(l => {
+                csv += `"${l.timestamp}","${l.studentName}","${l.studentId}"\n`;
+            });
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `Attendance_Logs_${getTodayDateStr()}.csv`;
+            a.click();
+        }
+        window.exportLogsCSV = exportLogsCSV;
+
+        function clearAllLogs() {
+            if (confirm("Clear all attendance logs?")) {
+                window.logs = [];
+                window.setLocalData('logs_history', []);
+                renderAllViews();
+                showToast("Logs cleared", 'info');
+            }
+        }
+        window.clearAllLogs = clearAllLogs;
+
+        function exportJSONData() {
+            const data = { students: window.students || [], logs: window.logs || [] };
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `Attendly_Backup_${getTodayDateStr()}.json`;
+            a.click();
+        }
+        window.exportJSONData = exportJSONData;
+
+        function importJSONData(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(evt) {
+                try {
+                    const imported = JSON.parse(evt.target.result);
+                    if (imported.students && Array.isArray(imported.students)) {
+                        window.students = imported.students;
+                        window.setLocalData('students_roster', window.students);
+                    }
+                    if (imported.logs && Array.isArray(imported.logs)) {
+                        window.logs = imported.logs;
+                        window.setLocalData('logs_history', window.logs);
+                    }
+                    renderAllViews();
+                    showToast("Imported data successfully!", 'success');
+                } catch(err) {
+                    showToast("Invalid JSON file", 'error');
+                }
+            };
+            reader.readAsText(file);
+        }
+        window.importJSONData = importJSONData;
+
+        window.addEventListener('DOMContentLoaded', () => {
+            renderAllViews();
+            checkCookieConsent();
+        });
+    </script>
+</body>
+</html>
